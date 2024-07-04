@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meditation Mandal Tracker v16</title>
+    <style>
+       :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f39c12;
+            --tertiary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --bg-color: #f4f4f4;
+            --text-color: #333;
+            --card-bg: #fff;
+            --card-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            --border-color: #ccc;
+        }
+
+        .dark-mode {
+            --bg-color: #333;
+            --text-color: #f4f4f4;
+            --card-bg: #444;
+            --card-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+            --border-color: #4a90e2;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .session-entry {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: var(--card-bg);
+        }
+
+        .session-time {
+            font-size: 0.7rem;
+            color: var(--secondary-color);
+        }
+
+        .session-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        #historyControls {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-color);
+            padding: 15px 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .danger-btn {
+            background-color: var(--danger-color);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .circular-progress {
+            width: 150px;
+            height: 150px;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .circular-progress svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .circular-progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+            position: relative;
+        }
+
+        .logo::after {
+            content: "Mandal Tracker";
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb);
+            filter: blur(20px);
+            opacity: 0.7;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        #backToTop {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            z-index: 1000;
+        }
+
+        #backToTop:hover {
+            opacity: 0.8;
+        }
+      .media-embed {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+
+.media-embed h3 {
+    margin-top: 0;
+}
+
+#mediaContainer {
+    margin-top: 15px;
+}
+
+#mediaContainer iframe {
+    max-width: 100%;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Meditation <span class="logo">Mandal Tracker</span></h1>
+        <h2>Namaskaram, <span id="userName" contenteditable="true" aria-label="Your name" class="logo">Your Name</span>!</h2>
+        <button id="themeToggle" aria-label="Toggle dark mode">Toggle Dark Mode</button>
+        <button id="giveFeedback" aria-label="Give feedback">Give Feedback</button>
+        <button id="addPastSession" aria-label="Add past session">Add Past Session</button>
+        <button id="printPage" aria-label="Print Page">Print Page</button>
+
+        <div id="mandalCreation" class="card">
+            <h2>Create New Mandal</h2>
+            <input type="text" id="mandalName" placeholder="Mandal Name" aria-label="Mandal Name">
+            <select id="mandalDuration" aria-label="Mandal Duration">
+                <option value="48">48 Days</option>
+                <option value="90">90 Days</option>
+            </select>
+            <input type="date" id="startDate" aria-label="Start Date">
+            <button id="createMandal" aria-label="Create Mandal">Create Mandal</button>
+        </div>
+
+        <div id="activeMandalInfo" class="card" style="display: none;">
+            <h2>Active Mandal: <span id="activeMandalName"></span></h2>
+            <div id="dashboard" aria-live="polite"></div>
+            <div class="dashboard-item">
+                <h3>Current Session</h3>
+                <div id="timer" aria-live="polite">00:00:00</div>
+                <div class="timer-controls">
+                    <button id="startSession" aria-label="Start Session">Start Session</button>
+                    <button id="stopSession" style="display: none;" aria-label="Stop Session">Stop Session</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="media-embed">
+            <h3>Meditation Media</h3>
+            <input type="text" id="mediaUrl" placeholder="Enter YouTube or SoundCloud URL" aria-label="Media URL">
+            <button id="embedMedia" aria-label="Embed Media">Embed Media</button>
+            <div id="mediaContainer"></div>
+        </div>
+
+        <div id="sessionHistory" class="card" style="display: none;">
+            <h2>Session History</h2>
+            <div id="historyControls">
+                <div>
+                    <input type="text" id="searchInput" placeholder="Search notes..." aria-label="Search notes">
+                    <button id="sortByDate" aria-label="Sort by Date">Sort by Date</button>
+                </div>
+            </div>
+            <div id="formatButtons">
+                <button onclick="formatText('p')" aria-label="Paragraph">P</button>
+                <button onclick="formatText('h1')" aria-label="Heading 1">H1</button>
+                <button onclick="formatText('h2')" aria-label="Heading 2">H2</button>
+                <button onclick="formatText('h3')" aria-label="Heading 3">H3</button>
+                <button onclick="formatText('h4')" aria-label="Heading 4">H4</button>
+                <button onclick="formatText('h5')" aria-label="Heading 5">H5</button>
+                <button onclick="formatText('h6')" aria-label="Heading 6">H6</button>
+                <button onclick="document.execCommand('bold')" aria-label="Bold"><b>B</b></button>
+                <button onclick="document.execCommand('italic')" aria-label="Italic"><i>I</i></button>
+                <button onclick="document.execCommand('underline')" aria-label="Underline"><u>U</u></button>
+                <button onclick="document.execCommand('strikeThrough')" aria-label="Strike Through"><s>S</s></button>
+                <button onclick="document.execCommand('removeFormat')" aria-label="Remove Formatting">Remove</button>
+            </div>
+            <div id="historyContent" aria-live="polite"></div>
+        </div>
+
+        <div id="pastSessionModal" class="modal" aria-hidden="true">
+            <div class="modal-content">
+                <span class="close" aria-label="Close">&times;</span>
+                <h2>Add Past Sessions</h2>
+                <form id="pastSessionForm">
+                    <label for="pastDate">Date:</label>
+                    <input type="date" id="pastDate" required aria-label="Past session date">
+                    <div>
+                        <label>
+                            <input type="checkbox" id="morningSession" checked aria-label="Morning session"> Morning Session
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" id="eveningSession" checked aria-label="Evening session"> Evening Session
+                        </label>
+                    </div>
+                    <button type="submit" aria-label="Add Sessions">Add Sessions</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="feedbackModal" class="modal" aria-hidden="true">
+            <div class="modal-content">
+                <span class="close" aria-label="Close">&times;</span>
+                <h2>Provide Feedback</h2>
+                <textarea id="feedbackText" rows="4" placeholder="Enter your feedback here..." aria-label="Feedback text"></textarea>
+                <button id="submitFeedback" aria-label="Submit Feedback">Submit Feedback</button>
+            </div>
+        </div>
+
+        <div id="toast" class="toast" aria-live="assertive"></div>
+    </div>
+
+        <button id="backToTop" aria-label="Back to top" title="Back to top">↑</button>
+<script>
+  // Constants
+const SESSION_DURATION = 873; // 14 minutes and 33 seconds in seconds
+const TOTAL_SESSIONS = 96; // 48 days * 2 sessions per day
+
+// Utility Functions
+const formatDate = (date) => {
+    return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+};
+
+const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+};
+
+const pad = (num) => num.toString().padStart(2, '0');
+
+const sanitizeHTML = (str) => {
+    const temp = document.createElement('div');
+    temp.textContent = str;
+    return temp.innerHTML;
+};
+
+const getSessionTime = (date) => {
+    const hours = date.getHours();
+    return hours < 12 ? 'Morning' : 'Evening';
+};
+
+// Store (Subject)
+class MeditationStore {
+    constructor() {
+        this.state = {
+            activeMandal: null,
+            sessions: [],
+            sortAscending: true,
+            theme: 'light',
+            timerRunning: false,
+            timerSeconds: 0,
+            userName: 'Your Name'
+        };
+        this.observers = [];
+        this.timerInterval = null;
+        console.log('MeditationStore initialized');
+    }
+
+    addObserver(observer) {
+        this.observers.push(observer);
+        console.log('Observer added');
+    }
+
+    notifyObservers() {
+        this.observers.forEach(observer => observer.update(this.state));
+        console.log('Observers notified');
+    }
+
+    setState(newState) {
+        this.state = { ...this.state, ...newState };
+        this.saveToLocalStorage();
+        this.notifyObservers();
+        console.log('State updated:', this.state);
+    }
+
+    createMandal(mandalData) {
+        if (this.state.activeMandal) {
+            throw new Error("An active Mandal already exists. Please complete or delete it before creating a new one.");
+        }
+        this.setState({ activeMandal: mandalData, sessions: [] });
+        console.log('Mandal created:', mandalData);
+    }
+
+    addSession(sessionData) {
+        this.setState({
+            sessions: [...this.state.sessions, sessionData],
+            currentStreak: this.calculateStreak()
+        });
+        console.log('Session added:', sessionData);
+    }
+
+    deleteSession(index) {
+        const newSessions = [...this.state.sessions];
+        newSessions.splice(index, 1);
+        this.setState({
+            sessions: newSessions,
+            currentStreak: this.calculateStreak()
+        });
+        console.log('Session deleted at index:', index);
+    }
+
+    updateSessionNotes(index, notes) {
+        const newSessions = [...this.state.sessions];
+        newSessions[index].notes = notes;
+        this.setState({ sessions: newSessions });
+        console.log('Session notes updated at index:', index, 'Notes:', notes);
+    }
+
+    toggleSortOrder() {
+        this.setState({ sortAscending: !this.state.sortAscending });
+        console.log('Sort order toggled:', this.state.sortAscending);
+    }
+
+    toggleTheme() {
+        const newTheme = this.state.theme === 'light' ? 'dark' : 'light';
+        this.setState({ theme: newTheme });
+        document.body.classList.toggle('dark-mode', newTheme === 'dark');
+        console.log('Theme toggled:', newTheme);
+    }
+
+    saveToLocalStorage() {
+        try {
+            localStorage.setItem('meditationTrackerState', JSON.stringify(this.state));
+            console.log('State saved to localStorage');
+        } catch (error) {
+            console.error('Error saving to localStorage:', error);
+            showToast('Error saving data. Please check your browser settings.');
+        }
+    }
+
+    loadFromLocalStorage() {
+        try {
+            const savedState = JSON.parse(localStorage.getItem('meditationTrackerState'));
+            if (savedState) {
+                if (savedState.activeMandal) {
+                    savedState.activeMandal.startDate = new Date(savedState.activeMandal.startDate);
+                    savedState.activeMandal.endDate = new Date(savedState.activeMandal.endDate);
+                }
+                savedState.sessions = savedState.sessions.map(session => ({
+                    ...session,
+                    date: new Date(session.date)
+                }));
+                this.setState(savedState);
+                console.log('State loaded from localStorage:', savedState);
+            }
+        } catch (error) {
+            console.error('Error loading from localStorage:', error);
+            showToast('Error loading saved data. Starting with a fresh state.');
+        }
+    }
+
+    calculateStreak() {
+        if (this.state.sessions.length === 0) return 0;
+        let streak = 0;
+        let currentDate = new Date();
+        currentDate.setHours(0, 0, 0, 0);
+
+        const sortedSessions = [...this.state.sessions].sort((a, b) => b.date - a.date);
+
+        for (let i = 0; i < sortedSessions.length; i++) {
+            const sessionDate = new Date(sortedSessions[i].date);
+            sessionDate.setHours(0, 0, 0, 0);
+
+            const dayDifference = Math.round((currentDate - sessionDate) / (1000 * 60 * 60 * 24));
+
+            if (dayDifference === streak) {
+                streak++;
+                currentDate = sessionDate;
+            } else if (dayDifference > streak) {
+                break;
+            }
+        }
+
+        console.log('Current streak calculated:', streak);
+        return streak;
+    }
+
+    getWeeklyStats() {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const weekSessions = this.state.sessions.filter(session => session.date >= oneWeekAgo);
+        const totalTime = weekSessions.reduce((sum, session) => sum + session.duration, 0);
+        const averageTime = weekSessions.length > 0 ? totalTime / weekSessions.length : 0;
+        console.log('Weekly stats calculated:', { sessionsCount: weekSessions.length, totalTime, averageTime });
+        return {
+            sessionsCount: weekSessions.length,
+            totalTime,
+            averageTime
+        };
+    }
+
+    searchNotes(query) {
+        const lowercaseQuery = query.toLowerCase();
+        const results = this.state.sessions.filter(session =>
+            session.notes.toLowerCase().includes(lowercaseQuery)
+        );
+        console.log('Notes searched:', query, 'Results:', results);
+        return results;
+    }
+
+    startTimer() {
+        this.setState({ timerRunning: true, timerSeconds: 0 });
+        this.timerInterval = setInterval(() => {
+            if (this.state.timerSeconds >= SESSION_DURATION) {
+                this.stopTimer();
+            } else {
+                this.setState({ timerSeconds: this.state.timerSeconds + 1 });
+            }
+        }, 1000);
+        console.log('Timer started');
+    }
+
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+        this.setState({
+            timerRunning: false,
+            timerSeconds: 0  // Reset timer to 0
+        });
+        this.addSession({
+            date: new Date(),
+            duration: Math.min(this.state.timerSeconds, SESSION_DURATION),
+            notes: ''
+        });
+        console.log('Timer stopped and session added');
+    }
+
+    setUserName(name) {
+        this.setState({ userName: name });
+        console.log('User name set:', name);
+    }
+}
+
+// UI Update Functions
+function updateDashboard(state) {
+    const { activeMandal, sessions } = state;
+    if (!activeMandal) return;
+
+    const dashboardElement = document.getElementById('dashboard');
+    const now = new Date();
+    const totalDays = (activeMandal.endDate - activeMandal.startDate) / (1000 * 60 * 60 * 24);
+    const daysPassed = Math.max(0, Math.min(totalDays, (now - activeMandal.startDate) / (1000 * 60 * 60 * 24)));
+    const progress = Math.round((daysPassed / totalDays) * 100);
+
+    const totalTime = sessions.reduce((sum, session) => sum + session.duration, 0);
+    const sessionsCount = sessions.length;
+
+    const streak = store.calculateStreak();
+    const weeklyStats = store.getWeeklyStats();
+
+    dashboardElement.innerHTML = `
+        <div class="dashboard-item">
+            <h3>Mandal Progress</h3>
+            <div class="circular-progress" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e0e0e0" stroke-width="10" />
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="var(--primary-color)" stroke-width="10" stroke-dasharray="${progress * 2.83} 283" />
+                </svg>
+                <div class="circular-progress-text">${progress}%</div>
+            </div>
+            <p>Start Date: ${formatDate(activeMandal.startDate)}</p>
+            <p>End Date: ${formatDate(activeMandal.endDate)}</p>
+            <p>Days Remaining: ${Math.max(0, Math.ceil(totalDays - daysPassed))}</p>
+        </div>
+        <div class="dashboard-item">
+            <h3>Session Statistics</h3>
+            <div class="circular-progress" role="progressbar" aria-valuenow="${sessionsCount}" aria-valuemin="0" aria-valuemax="${TOTAL_SESSIONS}">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e0e0e0" stroke-width="10" />
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="var(--secondary-color)" stroke-width="10" stroke-dasharray="${(sessionsCount / TOTAL_SESSIONS) * 283} 283" />
+                </svg>
+                <div class="circular-progress-text">${sessionsCount}/${TOTAL_SESSIONS}</div>
+            </div>
+            <p>Total Meditation Time: ${formatTime(totalTime)}</p>
+            <p>Average Session Duration: ${formatTime(totalTime / sessionsCount || 0)}</p>
+        </div>
+        <div class="dashboard-item">
+            <h3>Current Streak</h3>
+            <div class="streak-display">
+                <span id="currentStreak">${streak}</span> days
+            </div>
+        </div>
+        <div class="dashboard-item">
+            <h3>This Week's Progress</h3>
+            <p>Sessions: ${weeklyStats.sessionsCount}</p>
+            <p>Total Time: ${formatTime(weeklyStats.totalTime)}</p>
+            <p>Average Time: ${formatTime(weeklyStats.averageTime)}</p>
+        </div>
+        <div class="dashboard-item">
+            <h3>Quick Add</h3>
+            <button id="addTodaySession" aria-label="Add Session for Today">Add Session for Today</button>
+        </div>
+    `;
+
+    document.getElementById('activeMandalName').textContent = activeMandal.name;
+    document.getElementById('addTodaySession').addEventListener('click', handleAddTodaySession);
+}
+
+function displaySessionHistory(state, searchQuery = '') {
+    const { sessions, sortAscending } = state;
+    const historyContent = document.getElementById('historyContent');
+    
+    if (sessions.length === 0) {
+        historyContent.innerHTML = "<p>No meditation sessions recorded yet.</p>";
+        return;
+    }
+
+    const sortedSessions = [...sessions].sort((a, b) => 
+        sortAscending ? a.date - b.date : b.date - a.date
+    );
+
+    historyContent.innerHTML = sortedSessions.map((session, index) => `
+        <div class="session-entry">
+            <div class="session-header">
+                <span class="session-time">${session.period || getSessionTime(session.date)}</span>
+                <span class="session-date">${formatDate(session.date)} - ${formatTime(session.duration)}</span>
+            </div>
+            <div class="editable-notes" contenteditable="true" data-index="${index}" onblur="handleSaveNotes(event)" aria-label="Session notes">
+                ${highlightSearchTerm(sanitizeHTML(session.notes), searchQuery)}
+            </div>
+            <div class="session-controls">
+                <button class="danger-btn" onclick="handleDeleteSession(${index})" aria-label="Delete Session">Delete Session</button>
+                <button class="format-btn" onclick="toggleFormatMenu(${index})" aria-label="Format Notes">Format</button>
+                <div class="format-menu" id="formatMenu-${index}" style="display: none;">
+                    <button class="format-button" onclick="applyFormat(${index}, 'bold')">Bold</button>
+                    <button class="format-button" onclick="applyFormat(${index}, 'italic')">Italic</button>
+                    <button class="format-button" onclick="applyFormat(${index}, 'underline')">Underline</button>
+                    <button class="format-button" onclick="applyFormat(${index}, 'strikeThrough')">Strike Through</button>
+                    <button class="format-button" onclick="applyFormat(${index}, 'removeFormat')">Remove Formatting</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function highlightSearchTerm(text, searchTerm) {
+    if (!searchTerm) return text;
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+}
+
+function updateTimerDisplay(seconds) {
+    const timerElement = document.getElementById('timer');
+    timerElement.textContent = formatTime(seconds);
+}
+
+function updateTimerControls(timerRunning) {
+    const startButton = document.getElementById('startSession');
+    const stopButton = document.getElementById('stopSession');
+    startButton.style.display = timerRunning ? 'none' : 'inline-block';
+    stopButton.style.display = timerRunning ? 'inline-block' : 'none';
+}
+
+function toggleFormatMenu(index) {
+    const formatMenu = document.getElementById(`formatMenu-${index}`);
+    formatMenu.style.display = formatMenu.style.display === 'none' ? 'block' : 'none';
+    console.log('Format menu toggled for index:', index);
+}
+
+function applyFormat(index, command) {
+    document.execCommand(command);
+    console.log('Format applied:', command, 'for index:', index);
+}
+
+// Event Handlers
+function handleCreateMandal() {
+    const name = document.getElementById('mandalName').value.trim();
+    const duration = parseInt(document.getElementById('mandalDuration').value);
+    const startDate = new Date(document.getElementById('startDate').value);
+    
+    if (!name || isNaN(startDate.getTime())) {
+        showToast('Please enter a valid Mandal name and start date.');
+        return;
+    }
+    
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + duration);
+    
+    try {
+        store.createMandal({ name, startDate, endDate, duration });
+        showToast('Mandal created successfully!');
+        
+        document.getElementById('activeMandalInfo').style.display = 'block';
+        document.getElementById('sessionHistory').style.display = 'block';
+        document.getElementById('mandalCreation').style.display = 'none';
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+function handleAddPastSession(event) {
+    event.preventDefault();
+    const pastDate = new Date(document.getElementById('pastDate').value);
+    const addMorning = document.getElementById('morningSession').checked;
+    const addEvening = document.getElementById('eveningSession').checked;
+
+    if (isNaN(pastDate.getTime())) {
+        showToast('Please select a valid date.');
+        return;
+    }
+
+    if (addMorning) {
+        const morningDate = new Date(pastDate);
+        morningDate.setHours(8, 0, 0, 0);
+        store.addSession({
+            date: morningDate,
+            duration: SESSION_DURATION,
+            notes: '',
+            period: 'Morning'
+        });
+    }
+
+    if (addEvening) {
+        const eveningDate = new Date(pastDate);
+        eveningDate.setHours(20, 0, 0, 0);
+        store.addSession({
+            date: eveningDate,
+            duration: SESSION_DURATION,
+            notes: '',
+            period: 'Evening'
+        });
+    }
+
+    closeModal('pastSessionModal');
+    showToast('Past session(s) added successfully.');
+}
+
+function handleSubmitFeedback() {
+    const feedbackText = document.getElementById('feedbackText').value.trim();
+    if (feedbackText) {
+        const feedback = {
+            text: feedbackText,
+            date: new Date().toISOString()
+        };
+        try {
+            let feedbacks = JSON.parse(localStorage.getItem('meditationTrackerFeedback') || '[]');
+            feedbacks.push(feedback);
+            localStorage.setItem('meditationTrackerFeedback', JSON.stringify(feedbacks));
+            document.getElementById('feedbackText').value = '';
+            closeModal('feedbackModal');
+            showToast('Feedback submitted successfully!');
+        } catch (error) {
+            console.error('Error saving feedback:', error);
+            showToast('Error saving feedback. Please try again.');
+        }
+    } else {
+        showToast('Please enter feedback before submitting.');
+    }
+}
+
+function handleDeleteSession(index) {
+    if (confirm('Are you sure you want to delete this session?')) {
+        store.deleteSession(index);
+        showToast('Session deleted successfully.');
+        displaySessionHistory(store.state);
+    }
+}
+
+function handleSaveNotes(event) {
+    const index = parseInt(event.target.dataset.index);
+    const notes = event.target.textContent;
+    store.updateSessionNotes(index, sanitizeHTML(notes));
+    showToast('Notes saved successfully.');
+}
+
+function handleAddTodaySession() {
+    const now = new Date();
+    store.addSession({
+        date: now,
+        duration: SESSION_DURATION,
+        notes: '',
+        period: getSessionTime(now)
+    });
+    showToast('Session added for today.');
+}
+
+function handleSearch() {
+    const query = document.getElementById('searchInput').value;
+    const searchResults = store.searchNotes(query);
+    displaySessionHistory({ ...store.state, sessions: searchResults }, query);
+}
+
+function handleStartSession() {
+    store.startTimer();
+    updateTimerControls(true);
+}
+
+function handleStopSession() {
+    store.stopTimer();
+    updateTimerControls(false);
+    showToast('Session completed and saved.');
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+    console.log('Toast message:', message);
+}
+
+function openModal(modalId) {
+    document.getElementById(modalId).style.display = 'block';
+    document.getElementById(modalId).setAttribute('aria-hidden', 'false');
+    console.log('Modal opened:', modalId);
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    document.getElementById(modalId).setAttribute('aria-hidden', 'true');
+    console.log('Modal closed:', modalId);
+}
+
+// Initialize application
+const store = new MeditationStore();
+
+document.addEventListener('DOMContentLoaded', () => {
+    store.loadFromLocalStorage();
+    
+    document.getElementById('embedMedia').addEventListener('click', handleEmbedMedia);
+    document.getElementById('themeToggle').addEventListener('click', () => store.toggleTheme());
+    document.getElementById('giveFeedback').addEventListener('click', () => openModal('feedbackModal'));
+    document.getElementById('addPastSession').addEventListener('click', () => openModal('pastSessionModal'));
+    document.getElementById('createMandal').addEventListener('click', handleCreateMandal);
+    document.getElementById('sortByDate').addEventListener('click', () => {
+        store.toggleSortOrder();
+        displaySessionHistory(store.state);
+    });
+    document.getElementById('submitFeedback').addEventListener('click', handleSubmitFeedback);
+    document.getElementById('pastSessionForm').addEventListener('submit', handleAddPastSession);
+    document.getElementById('searchInput').addEventListener('input', handleSearch);
+    document.getElementById('startSession').addEventListener('click', handleStartSession);
+    document.getElementById('stopSession').addEventListener('click', handleStopSession);
+
+    const userNameElement = document.getElementById('userName');
+    userNameElement.textContent = store.state.userName;
+    userNameElement.addEventListener('blur', (e) => {
+        const newName = e.target.textContent.trim();
+        if (newName) {
+            store.setUserName(sanitizeHTML(newName));
+            showToast('Name updated successfully.');
+        } else {
+            e.target.textContent = store.state.userName;
+            showToast('Name cannot be empty.');
+        }
+    });
+
+    const startDateInput = document.getElementById('startDate');
+    startDateInput.min = new Date().toISOString().split('T')[0];
+
+    if (store.state.activeMandal) {
+        document.getElementById('activeMandalInfo').style.display = 'block';
+        document.getElementById('sessionHistory').style.display = 'block';
+        document.getElementById('mandalCreation').style.display = 'none';
+    }
+
+    updateDashboard(store.state);
+    displaySessionHistory(store.state);
+    document.body.classList.toggle('dark-mode', store.state.theme === 'dark');
+
+    setInterval(() => {
+        if (store.state.timerRunning) {
+            updateTimerDisplay(store.state.timerSeconds);
+        }
+    }, 1000);
+
+    // Back to Top functionality
+    const backToTopButton = document.getElementById('backToTop');
+    window.onscroll = function() {
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            backToTopButton.style.display = "block";
+        } else {
+            backToTopButton.style.display = "none";
+        }
+    };
+
+    backToTopButton.addEventListener('click', function() {
+        document.body.scrollTop = 0; // For Safari
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    });
+
+    // Make history controls sticky
+    const historyControls = document.getElementById('historyControls');
+    const sticky = historyControls.offsetTop;
+
+    window.addEventListener('scroll', function() {
+        if (window.pageYOffset > sticky) {
+            historyControls.classList.add("sticky");
+        } else {
+            historyControls.classList.remove("sticky");
+        }
+    });
+
+    console.log('Application initialized');
+});
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        closeModal(event.target.id);
+    }
+};
+
+// Close modals when pressing Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        document.querySelectorAll('.modal').forEach(modal => {
+            if (modal.style.display === 'block') {
+                closeModal(modal.id);
+            }
+        });
+    }
+});
+
+store.addObserver({
+    update: function(state) {
+        updateDashboard(state);
+        displaySessionHistory(state);
+        updateTimerControls(state.timerRunning);
+        updateTimerDisplay(state.timerSeconds);
+    }
+});
+
+// Implement lazy loading for session history
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            // Load more session history items
+            // This is a placeholder for actual implementation
+            console.log('Load more session history items');
+        }
+    });
+}, { threshold: 0.5 });
+
+const historyContent = document.getElementById('historyContent');
+observer.observe(historyContent);
+
+// Add support for offline functionality
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+    });
+}
+
+function handleEmbedMedia() {
+    const mediaUrl = document.getElementById('mediaUrl').value.trim();
+    const mediaContainer = document.getElementById('mediaContainer');
+    
+    if (!mediaUrl) {
+        showToast('Please enter a valid URL.');
+        return;
+    }
+
+    try {
+        const url = new URL(mediaUrl);
+        
+        if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+            const videoId = extractYouTubeId(mediaUrl);
+            if (videoId) {
+                const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}`;
+                mediaContainer.innerHTML = `
+                    <iframe 
+                        width="560" 
+                        height="315" 
+                        src="${embedUrl}" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen
+                        title="YouTube video player">
+                    </iframe>`;
+                showToast('YouTube video embedded successfully.');
+            } else {
+                showToast('Invalid YouTube URL. Please check and try again.');
+            }
+        } else if (url.hostname.includes('soundcloud.com')) {
+            const embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(mediaUrl)}`;
+            mediaContainer.innerHTML = `
+                <iframe 
+                    width="100%" 
+                    height="166" 
+                    scrolling="no" 
+                    frameborder="no" 
+                    allow="autoplay" 
+                    src="${embedUrl}"
+                    title="SoundCloud audio player">
+                </iframe>`;
+            showToast('SoundCloud track embedded successfully.');
+        } else {
+            showToast('Unsupported media URL. Please enter a YouTube or SoundCloud URL.');
+        }
+    } catch (error) {
+        console.error('Error embedding media:', error);
+        showToast('Invalid URL. Please enter a valid YouTube or SoundCloud URL.');
+    }
+}
+
+function extractYouTubeId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+  
+  </script>
+   
+</body>
+</html>
+
+
