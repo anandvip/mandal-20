@@ -898,7 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const startDateInput = document.getElementById('startDate');
-    startDateInput.min = new Date().toISOString().split('T')[0];
+    // startDateInput.min = new Date().toISOString().split('T')[0];
 
     if (store.state.activeMandal) {
         document.getElementById('activeMandalInfo').style.display = 'block';
