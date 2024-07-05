@@ -252,6 +252,29 @@
 #mediaContainer iframe {
     max-width: 100%;
 }
+      .container {
+  max-width: 100%;
+  padding: 20px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 750px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 992px) {
+  .container {
+    max-width: 970px;
+  }
+}
+
+#dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
     </style>
 </head>
 <body>
@@ -355,7 +378,7 @@
 
         <button id="backToTop" aria-label="Back to top" title="Back to top">↑</button>
 <script>
-  // Constants
+ // Constants
 const SESSION_DURATION = 873; // 14 minutes and 33 seconds in seconds
 const TOTAL_SESSIONS = 96; // 48 days * 2 sessions per day
 
@@ -377,18 +400,18 @@ const formatTime = (seconds) => {
 
 const pad = (num) => num.toString().padStart(2, '0');
 
-const sanitizeHTML = (str) => {
+function sanitizeHTML(str) {
     const temp = document.createElement('div');
     temp.textContent = str;
-    return temp.innerHTML;
-};
+    return temp.innerHTML.replace(/javascript:/gi, '');
+}
 
 const getSessionTime = (date) => {
     const hours = date.getHours();
     return hours < 12 ? 'Morning' : 'Evening';
 };
 
-// Store (Subject)
+// MeditationStore Class
 class MeditationStore {
     constructor() {
         this.state = {
@@ -401,25 +424,21 @@ class MeditationStore {
             userName: 'Your Name'
         };
         this.observers = [];
-        this.timerInterval = null;
-        console.log('MeditationStore initialized');
+        this.timerWorker = null;
     }
 
     addObserver(observer) {
         this.observers.push(observer);
-        console.log('Observer added');
     }
 
     notifyObservers() {
         this.observers.forEach(observer => observer.update(this.state));
-        console.log('Observers notified');
     }
 
     setState(newState) {
         this.state = { ...this.state, ...newState };
         this.saveToLocalStorage();
         this.notifyObservers();
-        console.log('State updated:', this.state);
     }
 
     createMandal(mandalData) {
@@ -427,7 +446,6 @@ class MeditationStore {
             throw new Error("An active Mandal already exists. Please complete or delete it before creating a new one.");
         }
         this.setState({ activeMandal: mandalData, sessions: [] });
-        console.log('Mandal created:', mandalData);
     }
 
     addSession(sessionData) {
@@ -435,7 +453,6 @@ class MeditationStore {
             sessions: [...this.state.sessions, sessionData],
             currentStreak: this.calculateStreak()
         });
-        console.log('Session added:', sessionData);
     }
 
     deleteSession(index) {
@@ -445,32 +462,27 @@ class MeditationStore {
             sessions: newSessions,
             currentStreak: this.calculateStreak()
         });
-        console.log('Session deleted at index:', index);
     }
 
     updateSessionNotes(index, notes) {
         const newSessions = [...this.state.sessions];
         newSessions[index].notes = notes;
         this.setState({ sessions: newSessions });
-        console.log('Session notes updated at index:', index, 'Notes:', notes);
     }
 
     toggleSortOrder() {
         this.setState({ sortAscending: !this.state.sortAscending });
-        console.log('Sort order toggled:', this.state.sortAscending);
     }
 
     toggleTheme() {
         const newTheme = this.state.theme === 'light' ? 'dark' : 'light';
         this.setState({ theme: newTheme });
         document.body.classList.toggle('dark-mode', newTheme === 'dark');
-        console.log('Theme toggled:', newTheme);
     }
 
     saveToLocalStorage() {
         try {
             localStorage.setItem('meditationTrackerState', JSON.stringify(this.state));
-            console.log('State saved to localStorage');
         } catch (error) {
             console.error('Error saving to localStorage:', error);
             showToast('Error saving data. Please check your browser settings.');
@@ -490,7 +502,6 @@ class MeditationStore {
                     date: new Date(session.date)
                 }));
                 this.setState(savedState);
-                console.log('State loaded from localStorage:', savedState);
             }
         } catch (error) {
             console.error('Error loading from localStorage:', error);
@@ -520,7 +531,6 @@ class MeditationStore {
             }
         }
 
-        console.log('Current streak calculated:', streak);
         return streak;
     }
 
@@ -530,7 +540,6 @@ class MeditationStore {
         const weekSessions = this.state.sessions.filter(session => session.date >= oneWeekAgo);
         const totalTime = weekSessions.reduce((sum, session) => sum + session.duration, 0);
         const averageTime = weekSessions.length > 0 ? totalTime / weekSessions.length : 0;
-        console.log('Weekly stats calculated:', { sessionsCount: weekSessions.length, totalTime, averageTime });
         return {
             sessionsCount: weekSessions.length,
             totalTime,
@@ -540,44 +549,49 @@ class MeditationStore {
 
     searchNotes(query) {
         const lowercaseQuery = query.toLowerCase();
-        const results = this.state.sessions.filter(session =>
+        return this.state.sessions.filter(session =>
             session.notes.toLowerCase().includes(lowercaseQuery)
         );
-        console.log('Notes searched:', query, 'Results:', results);
-        return results;
     }
 
     startTimer() {
+        if (!this.timerWorker) {
+            this.timerWorker = new Worker('timer-worker.js');
+            this.timerWorker.onmessage = (e) => {
+                if (e.data.type === 'tick') {
+                    this.setState({ timerSeconds: e.data.seconds });
+                    if (e.data.seconds >= SESSION_DURATION) {
+                        this.stopTimer();
+                    }
+                } else if (e.data.type === 'stopped') {
+                    this.addSession({
+                        date: new Date(),
+                        duration: Math.min(e.data.seconds, SESSION_DURATION),
+                        notes: ''
+                    });
+                }
+            };
+        }
+        this.timerWorker.postMessage({ command: 'start' });
         this.setState({ timerRunning: true, timerSeconds: 0 });
-        this.timerInterval = setInterval(() => {
-            if (this.state.timerSeconds >= SESSION_DURATION) {
-                this.stopTimer();
-            } else {
-                this.setState({ timerSeconds: this.state.timerSeconds + 1 });
-            }
-        }, 1000);
-        console.log('Timer started');
     }
 
     stopTimer() {
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
+        if (this.timerWorker) {
+            this.timerWorker.postMessage({ command: 'stop' });
         }
-        this.setState({
-            timerRunning: false,
-            timerSeconds: 0  // Reset timer to 0
-        });
-        this.addSession({
-            date: new Date(),
-            duration: Math.min(this.state.timerSeconds, SESSION_DURATION),
-            notes: ''
-        });
-        console.log('Timer stopped and session added');
+        this.setState({ timerRunning: false });
+    }
+
+    cleanup() {
+        if (this.timerWorker) {
+            this.timerWorker.terminate();
+            this.timerWorker = null;
+        }
     }
 
     setUserName(name) {
         this.setState({ userName: name });
-        console.log('User name set:', name);
     }
 }
 
@@ -672,11 +686,11 @@ function displaySessionHistory(state, searchQuery = '') {
                 <button class="danger-btn" onclick="handleDeleteSession(${index})" aria-label="Delete Session">Delete Session</button>
                 <button class="format-btn" onclick="toggleFormatMenu(${index})" aria-label="Format Notes">Format</button>
                 <div class="format-menu" id="formatMenu-${index}" style="display: none;">
-                    <button class="format-button" onclick="applyFormat(${index}, 'bold')">Bold</button>
-                    <button class="format-button" onclick="applyFormat(${index}, 'italic')">Italic</button>
-                    <button class="format-button" onclick="applyFormat(${index}, 'underline')">Underline</button>
-                    <button class="format-button" onclick="applyFormat(${index}, 'strikeThrough')">Strike Through</button>
-                    <button class="format-button" onclick="applyFormat(${index}, 'removeFormat')">Remove Formatting</button>
+                    <button class="format-button" onclick="applyFormat('bold', ${index})">Bold</button>
+                    <button class="format-button" onclick="applyFormat('italic', ${index})">Italic</button>
+                    <button class="format-button" onclick="applyFormat('underline', ${index})">Underline</button>
+                    <button class="format-button" onclick="applyFormat('strikeThrough', ${index})">Strike Through</button>
+                    <button class="format-button" onclick="applyFormat('removeFormat', ${index})">Remove Formatting</button>
                 </div>
             </div>
         </div>
@@ -704,12 +718,10 @@ function updateTimerControls(timerRunning) {
 function toggleFormatMenu(index) {
     const formatMenu = document.getElementById(`formatMenu-${index}`);
     formatMenu.style.display = formatMenu.style.display === 'none' ? 'block' : 'none';
-    console.log('Format menu toggled for index:', index);
 }
 
-function applyFormat(index, command) {
-    document.execCommand(command);
-    console.log('Format applied:', command, 'for index:', index);
+function applyFormat(command, index) {
+    document.execCommand(command, false, null);
 }
 
 // Event Handlers
@@ -848,19 +860,16 @@ function showToast(message) {
     setTimeout(() => {
         toast.style.display = 'none';
     }, 3000);
-    console.log('Toast message:', message);
 }
 
 function openModal(modalId) {
     document.getElementById(modalId).style.display = 'block';
     document.getElementById(modalId).setAttribute('aria-hidden', 'false');
-    console.log('Modal opened:', modalId);
 }
 
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     document.getElementById(modalId).setAttribute('aria-hidden', 'true');
-    console.log('Modal closed:', modalId);
 }
 
 // Initialize application
@@ -898,7 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const startDateInput = document.getElementById('startDate');
-    // startDateInput.min = new Date().toISOString().split('T')[0];
+    startDateInput.min = new Date().toISOString().split('T')[0];
 
     if (store.state.activeMandal) {
         document.getElementById('activeMandalInfo').style.display = 'block';
@@ -909,12 +918,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDashboard(store.state);
     displaySessionHistory(store.state);
     document.body.classList.toggle('dark-mode', store.state.theme === 'dark');
-
-    setInterval(() => {
-        if (store.state.timerRunning) {
-            updateTimerDisplay(store.state.timerSeconds);
-        }
-    }, 1000);
 
     // Back to Top functionality
     const backToTopButton = document.getElementById('backToTop');
@@ -942,8 +945,6 @@ document.addEventListener('DOMContentLoaded', () => {
             historyControls.classList.remove("sticky");
         }
     });
-
-    console.log('Application initialized');
 });
 
 // Close modals when clicking outside
@@ -973,24 +974,10 @@ store.addObserver({
     }
 });
 
-// Implement lazy loading for session history
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            // Load more session history items
-            // This is a placeholder for actual implementation
-            console.log('Load more session history items');
-        }
-    });
-}, { threshold: 0.5 });
-
-const historyContent = document.getElementById('historyContent');
-observer.observe(historyContent);
-
 // Add support for offline functionality
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('https://anandvip.github.io/mandal-20/service-worker.js')
+        navigator.serviceWorker.register('/mandal-20/service-worker.js')
             .then(registration => {
                 console.log('ServiceWorker registration successful with scope: ', registration.scope);
             })
@@ -1058,10 +1045,12 @@ function extractYouTubeId(url) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-  
+// Cleanup function
+window.addEventListener('beforeunload', () => {
+    store.cleanup();
+});
   </script>
+
    
 </body>
 </html>
-
-
