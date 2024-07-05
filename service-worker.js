@@ -2,8 +2,8 @@ const CACHE_NAME = 'meditation-mandal-tracker-v16';
 const urlsToCache = [
   ' mandal-20/index.html',
   'mandal-20/service-worker.js',
-  'mandal-20/timer-worker.js'
-  '/styles.css'
+  'mandal-20/timer-worker.js',
+  'styles.css'
 ];
 
 // Install event - cache necessary assets
