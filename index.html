@@ -405,8 +405,8 @@ function displaySessionHistory(state, searchQuery = '') {
     historyContent.innerHTML = sortedSessions.map((session, index) => `
         <div class="session-entry">
             <div class="session-header">
-                <span class="session-time">${session.period || getSessionTime(session.date)}</span>
-                <span class="session-date">${formatDate(session.date)} - ${formatTime(session.duration)}</span><br>
+                <span class="session-time">${session.period || getSessionTime(session.date)}</span><br>
+                <span class="session-date">${formatDate(session.date)} - ${formatTime(session.duration)}</span>
             </div>
             <div class="editable-notes" contenteditable="true" data-index="${index}" onblur="handleSaveNotes(event)" aria-label="Session notes">
                 ${highlightSearchTerm(sanitizeHTML(session.notes), searchQuery)}
