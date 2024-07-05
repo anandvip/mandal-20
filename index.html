@@ -84,7 +84,7 @@
             background-color: var(--card-bg);
         }
 
-        .session-time {
+        .'session-time' {
             font-size: 0.7rem;
             color: var(--secondary-color);
         }
@@ -677,7 +677,7 @@ function displaySessionHistory(state, searchQuery = '') {
         <div class="session-entry">
             <div class="session-header">
                 <span class="session-time">${session.period || getSessionTime(session.date)}</span>
-                <span class="session-date">${formatDate(session.date)} - ${formatTime(session.duration)}</span>
+                <span class="session-date">${formatDate(session.date)} - ${formatTime(session.duration)}</span><br>
             </div>
             <div class="editable-notes" contenteditable="true" data-index="${index}" onblur="handleSaveNotes(event)" aria-label="Session notes">
                 ${highlightSearchTerm(sanitizeHTML(session.notes), searchQuery)}
