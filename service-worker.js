@@ -3,7 +3,8 @@ const urlsToCache = [
   ' mandal-20/index.html',
   'mandal-20/service-worker.js',
   'mandal-20/timer-worker.js',
-  'styles.css'
+  'styles.css',
+  'app.js'
 ];
 console.log(`coming from srvc wrkr ${urlsCache} ,` urlsCache.length) 
 // Install event - cache necessary assets
