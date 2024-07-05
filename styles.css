@@ -271,3 +271,28 @@
 div#timer{
 font-size:4.5rem;
 }
+.youtube-preview {
+    position: relative;
+    display: inline-block;
+}
+.play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.play-button:hover {
+    background-color: rgba(0, 0, 0, 0.9);
+}
+.play-button::before {
+    content: "\25B6"; /* Unicode for play symbol */
+}
