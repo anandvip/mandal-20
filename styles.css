@@ -77,7 +77,7 @@
             background-color: var(--card-bg);
         }
 
-        .'session-time' {
+        span.session-time {
             font-size: 0.6rem;
             color: var(--secondary-color);
         }
