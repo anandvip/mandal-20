@@ -5,7 +5,7 @@ const urlsToCache = [
   'mandal-20/timer-worker.js',
   'styles.css'
 ];
-
+console.log(`coming from srvc wrkr ${urlsCache} ,` urlsCache.length) 
 // Install event - cache necessary assets
 self.addEventListener('install', event => {
   event.waitUntil(
