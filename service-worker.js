@@ -3,7 +3,7 @@ const urlsToCache = [
   ' mandal-20/index.html',
   'mandal-20/service-worker.js',
   'mandal-20/timer-worker.js'
-  'styles.css'
+  '/styles.css'
 ];
 
 // Install event - cache necessary assets
