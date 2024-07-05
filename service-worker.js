@@ -1,10 +1,10 @@
 const CACHE_NAME = 'meditation-mandal-tracker-v16';
 const urlsToCache = [
-  ' index.html',
-  'service-worker.js',
-  'timer-worker.js',
+  ' /index.html',
+  'mandal-20/service-worker.js',
+  '/timer-worker.js',
   'styles.css',
-  'app.js'
+  '/app.js'
 ];
 console.log(`coming from srvc wrkr ${urlsCache} ,` urlsCache.length) 
 // Install event - cache necessary assets
