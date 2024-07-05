@@ -1,7 +1,7 @@
 const CACHE_NAME = 'meditation-mandal-tracker-v16';
 const urlsToCache = [
   ' /index.html',
-  'mandal-20/service-worker.js',
+  '/mandal-20/service-worker.js',
   '/timer-worker.js',
   'styles.css',
   '/app.js'
