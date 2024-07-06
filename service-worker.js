@@ -6,7 +6,7 @@ const urlsToCache = [
   'styles.css',
   '/app.js'
 ];
-console.log(`coming from srvc wrkr ${urlsCache} ,` urlsCache.length) 
+console.log(`coming from srvc wrkr ${urlsToCache.length} ,` )
 // Install event - cache necessary assets
 self.addEventListener('install', event => {
   event.waitUntil(
