@@ -1,5 +1,6 @@
 let timerId;
 let seconds = 0;
+let interval;
 
 self.onmessage = function(e) {
   if (e.data.command === 'start') {
@@ -12,4 +13,17 @@ self.onmessage = function(e) {
     clearInterval(timerId);
     self.postMessage({ type: 'stopped', seconds: seconds });
   }
+};
+
+
+
+self.onmessage = function(e) {
+    if (e.data.command === 'start') {
+        interval = setInterval(() => {
+            self.postMessage({ type: 'tick' });
+        }, 1000);
+    } else if (e.data.command === 'stop') {
+        clearInterval(interval);
+        self.postMessage({ type: 'stopped' });
+    }
 };
