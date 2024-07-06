@@ -3,6 +3,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meditation Mandal Tracker v16</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+
+        .session-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.delete-btn.danger-red {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.delete-btn.danger-red:hover {
+    background-color: #c82333;
+}
+
+.editable-notes {
+    border: 1px solid #ccc;
+    padding: 10px;
+    min-height: 50px;
+    margin-top: 10px;
+}
+
+.editable-notes:empty:before {
+    content: 'Add notes here...';
+    color: #999;
+}
+    </style>
 </head>
 <body>
     <div class="container">
@@ -398,25 +431,21 @@ function displaySessionHistory(state, searchQuery = '') {
         sortAscending ? a.date - b.date : b.date - a.date
     );
 
-    const stickyNav = `
-  
-    `;
-
-    historyContent.innerHTML = stickyNav + sortedSessions.map((session, index) => `
+    historyContent.innerHTML = sortedSessions.map((session, index) => `
         <div class="session-entry">
             <div class="session-header">
                 <span class="session-time">${session.period || getSessionTime(session.date)}</span><br>
                 <span class="session-date">${formatDate(session.date)} - ${formatTime(session.duration)}</span>
             </div>
             <div class="editable-notes" contenteditable="true" data-index="${index}" onblur="handleSaveNotes(event)" aria-label="Session notes">
-                ${highlightSearchTerm(session.notes, searchQuery)}
+                ${session.notes ? highlightSearchTerm(session.notes, searchQuery) : 'Add notes here...'}
             </div>
             <div class="session-controls">
-                <button class="delete-btn" onclick="handleFormatClick(${index})" aria-label="Format Notes">Delete Session</button>
-                <button class="format-btn" onclick="handleDeleteSession(${index})" aria-label="Delete Session">Format</button>
+                <button class="delete-btn danger-red" onclick="handleDeleteSession(${index})" aria-label="Delete Session">Delete Session</button>
             </div>
         </div>
     `).join('');
+}
 
     // Make the format nav sticky
     const stickyFormatNav = document.getElementById('stickyFormatNav');
