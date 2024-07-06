@@ -101,8 +101,7 @@
         <button id="backToTop" aria-label="Back to top" title="Back to top">↑</button>
   
 <script>
-  
-  // Constants
+ // Constants
 const SESSION_DURATION = 873; // 14 minutes and 33 seconds in seconds
 const TOTAL_SESSIONS = 96; // 48 days * 2 sessions per day
 
@@ -116,10 +115,9 @@ const formatDate = (date) => {
 };
 
 const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+    const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+    return `${pad(minutes)}:${pad(secs)}`;
 };
 
 const pad = (num) => num.toString().padStart(2, '0');
@@ -146,12 +144,11 @@ class MeditationStore {
             sortAscending: true,
             theme: 'light',
             timerRunning: false,
-            timerSeconds: 0,
+            timerSeconds: SESSION_DURATION,
             userName: 'Your Name'
         };
         this.observers = [];
         this.timerInterval = null;
-        this.timerStartTime = null;
     }
 
     addObserver(observer) {
@@ -271,19 +268,117 @@ class MeditationStore {
         );
     }
 
+    initializeTimer() {
+        const timerHTML = `
+            <div class="timer-container">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" stroke="#4a90e2" stroke-width="10" fill="none" />
+                    <path id="timer-path" class="glow" stroke="#f5a623" stroke-width="10" fill="none" />
+                </svg>
+                <div id="draggable-dot"></div>
+                <div class="timer-display" id="timer-display">${formatTime(this.state.timerSeconds)}</div>
+                <button id="startSession">Start</button>
+                <button id="stopSession" style="display: none;">Stop</button>
+            </div>
+        `;
+        document.getElementById('activeMandalInfo').insertAdjacentHTML('beforeend', timerHTML);
+
+        this.timerPath = document.getElementById('timer-path');
+        this.timerDisplay = document.getElementById('timer-display');
+        this.startButton = document.getElementById('startSession');
+        this.stopButton = document.getElementById('stopSession');
+        this.draggableDot = document.getElementById('draggable-dot');
+
+        this.isDragging = false;
+        this.radius = 45;
+        this.centerX = 50;
+        this.centerY = 50;
+
+        this.updateTimerPath(this.state.timerSeconds);
+
+        this.draggableDot.addEventListener('mousedown', this.startDragging.bind(this));
+        document.addEventListener('mousemove', this.handleDrag.bind(this));
+        document.addEventListener('mouseup', this.stopDragging.bind(this));
+        this.draggableDot.addEventListener('touchstart', this.startDragging.bind(this));
+        document.addEventListener('touchmove', this.handleDrag.bind(this));
+        document.addEventListener('touchend', this.stopDragging.bind(this));
+
+        this.startButton.addEventListener('click', this.startTimer.bind(this));
+        this.stopButton.addEventListener('click', this.stopTimer.bind(this));
+    }
+
+    startDragging(e) {
+        if (!this.state.timerRunning) {
+            this.isDragging = true;
+            e.preventDefault();
+        }
+    }
+
+    stopDragging() {
+        this.isDragging = false;
+    }
+
+    handleDrag(e) {
+        if (this.isDragging && !this.state.timerRunning) {
+            e.preventDefault();
+            const rect = this.timerPath.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            const angle = this.getAngle(x, y);
+            const seconds = Math.round((angle / 360) * SESSION_DURATION);
+            this.setState({ timerSeconds: seconds });
+            this.updateTimerDisplay(seconds);
+            this.updateTimerPath(seconds);
+        }
+    }
+
+    getAngle(x, y) {
+        const dx = x - this.centerX;
+        const dy = y - this.centerY;
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        angle = (angle + 360) % 360;
+        return angle;
+    }
+
+    updateTimerDisplay(seconds) {
+        this.timerDisplay.textContent = formatTime(seconds);
+    }
+
+    updateTimerPath(seconds) {
+        const progress = (SESSION_DURATION - seconds) / SESSION_DURATION;
+        const angle = progress * 360;
+        
+        const endAngle = (angle - 90) * (Math.PI / 180);
+        const startX = this.centerX + this.radius * Math.cos(-Math.PI / 2);
+        const startY = this.centerY + this.radius * Math.sin(-Math.PI / 2);
+        const endX = this.centerX + this.radius * Math.cos(endAngle);
+        const endY = this.centerY + this.radius * Math.sin(endAngle);
+
+        const largeArcFlag = angle <= 180 ? "0" : "1";
+        this.timerPath.setAttribute("d", `M ${startX} ${startY} A ${this.radius} ${this.radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`);
+        
+        // Update draggable dot position
+        const dotX = this.centerX + this.radius * Math.cos(endAngle);
+        const dotY = this.centerY + this.radius * Math.sin(endAngle);
+        this.draggableDot.style.left = `${dotX}%`;
+        this.draggableDot.style.top = `${dotY}%`;
+    }
+
     startTimer() {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
         }
 
-        this.timerStartTime = Date.now();
-        this.setState({ timerRunning: true, timerSeconds: 0 });
+        this.setState({ timerRunning: true });
+        this.startButton.style.display = 'none';
+        this.stopButton.style.display = 'inline-block';
 
         this.timerInterval = setInterval(() => {
-            const elapsedSeconds = Math.floor((Date.now() - this.timerStartTime) / 1000);
-            this.setState({ timerSeconds: elapsedSeconds });
-
-            if (elapsedSeconds >= SESSION_DURATION) {
+            if (this.state.timerSeconds > 0) {
+                this.setState({ timerSeconds: this.state.timerSeconds - 1 });
+                this.updateTimerDisplay(this.state.timerSeconds);
+                this.updateTimerPath(this.state.timerSeconds);
+            } else {
                 this.stopTimer();
             }
         }, 1000);
@@ -295,17 +390,22 @@ class MeditationStore {
             this.timerInterval = null;
         }
 
-        const elapsedSeconds = Math.floor((Date.now() - this.timerStartTime) / 1000);
-        const duration = Math.min(elapsedSeconds, SESSION_DURATION);
-
         this.addSession({
-            date: new Date(this.timerStartTime),
-            duration: duration,
+            date: new Date(),
+            duration: SESSION_DURATION - this.state.timerSeconds,
             notes: ''
         });
 
-        this.setState({ timerRunning: false, timerSeconds: 0 });
-        this.timerStartTime = null;
+        this.setState({ timerRunning: false, timerSeconds: SESSION_DURATION });
+        this.updateTimerDisplay(SESSION_DURATION);
+        this.updateTimerPath(SESSION_DURATION);
+        this.startButton.style.display = 'inline-block';
+        this.stopButton.style.display = 'none';
+        showToast('Session completed and saved.');
+    }
+
+    setUserName(name) {
+        this.setState({ userName: name });
     }
 
     cleanup() {
@@ -313,10 +413,6 @@ class MeditationStore {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
         }
-    }
-
-    setUserName(name) {
-        this.setState({ userName: name });
     }
 }
 
@@ -360,7 +456,7 @@ function updateDashboard(state) {
                 </svg>
                 <div class="circular-progress-text">${sessionsCount}/${TOTAL_SESSIONS}</div>
             </div>
-            <p>Total Meditation Time: ${formatTime(totalTime)}</p>
+           <p>Total Meditation Time: ${formatTime(totalTime)}</p>
             <p>Average Session Duration: ${formatTime(totalTime / sessionsCount || 0)}</p>
         </div>
         <div class="dashboard-item">
@@ -383,6 +479,23 @@ function updateDashboard(state) {
 
     document.getElementById('activeMandalName').textContent = activeMandal.name;
     document.getElementById('addTodaySession').addEventListener('click', handleAddTodaySession);
+
+    // Animate dashboard dials
+    animateDashboardDials();
+}
+
+function animateDashboardDials() {
+    const dials = document.querySelectorAll('.circular-progress circle:nth-child(2)');
+    dials.forEach(dial => {
+        const length = dial.getTotalLength();
+        dial.style.strokeDasharray = length;
+        dial.style.strokeDashoffset = length;
+        
+        setTimeout(() => {
+            dial.style.transition = 'stroke-dashoffset 1s ease-in-out';
+            dial.style.strokeDashoffset = '0';
+        }, 100);
+    });
 }
 
 function displaySessionHistory(state, searchQuery = '') {
@@ -399,7 +512,14 @@ function displaySessionHistory(state, searchQuery = '') {
     );
 
     const stickyNav = `
-  
+        <div id="stickyFormatNav" class="sticky-format-nav">
+            <button id="sortByDate" aria-label="Sort by Date">Sort by Date</button>
+            <button onclick="applyFormat('bold')" aria-label="Bold">B</button>
+            <button onclick="applyFormat('italic')" aria-label="Italic">I</button>
+            <button onclick="applyFormat('underline')" aria-label="Underline">U</button>
+            <button onclick="applyFormat('strikeThrough')" aria-label="Strike Through">S</button>
+            <button onclick="applyFormat('removeFormat')" aria-label="Remove Formatting">Remove</button>
+        </div>
     `;
 
     historyContent.innerHTML = stickyNav + sortedSessions.map((session, index) => `
@@ -412,8 +532,7 @@ function displaySessionHistory(state, searchQuery = '') {
                 ${highlightSearchTerm(session.notes, searchQuery)}
             </div>
             <div class="session-controls">
-                <button class="delete-btn" onclick="handleFormatClick(${index})" aria-label="Format Notes">Delete Session</button>
-                <button class="format-btn" onclick="handleDeleteSession(${index})" aria-label="Delete Session">Format</button>
+                <button class="delete-btn" onclick="handleDeleteSession(${index})" aria-label="Delete Session">Delete Session</button>
             </div>
         </div>
     `).join('');
@@ -428,6 +547,12 @@ function displaySessionHistory(state, searchQuery = '') {
             stickyFormatNav.classList.remove("sticky");
         }
     };
+
+    // Add event listener to sort button
+    document.getElementById('sortByDate').addEventListener('click', () => {
+        store.toggleSortOrder();
+        displaySessionHistory(store.state);
+    });
 }
 
 function highlightSearchTerm(text, searchTerm) {
@@ -436,25 +561,13 @@ function highlightSearchTerm(text, searchTerm) {
     return text.replace(regex, '<mark>$1</mark>');
 }
 
-function updateTimerDisplay(seconds) {
-    const timerElement = document.getElementById('timer');
-    timerElement.textContent = formatTime(seconds);
-}
-
-function updateTimerControls(timerRunning) {
-    const startButton = document.getElementById('startSession');
-    const stopButton = document.getElementById('stopSession');
-    startButton.style.display = timerRunning ? 'none' : 'inline-block';
-    stopButton.style.display = timerRunning ? 'inline-block' : 'none';
-}
-
 // Event Handlers
 function handleCreateMandal() {
     const name = document.getElementById('mandalName').value.trim();
     const duration = parseInt(document.getElementById('mandalDuration').value);
     const startDate = new Date(document.getElementById('startDate').value);
     
-   if (!name || isNaN(startDate.getTime())) {
+    if (!name || isNaN(startDate.getTime())) {
         showToast('Please enter a valid Mandal name and start date.');
         return;
     }
@@ -468,6 +581,7 @@ function handleCreateMandal() {
     document.getElementById('activeMandalInfo').style.display = 'block';
     document.getElementById('sessionHistory').style.display = 'block';
     document.getElementById('mandalCreation').style.display = 'none';
+    store.initializeTimer();
 }
 
 function handleAddPastSession(event) {
@@ -555,24 +669,6 @@ function handleSearch() {
     const query = document.getElementById('searchInput').value;
     const searchResults = store.searchNotes(query);
     displaySessionHistory({ ...store.state, sessions: searchResults }, query);
-}
-
-function handleStartSession() {
-    store.startTimer();
-    updateTimerControls(true);
-}
-
-function handleStopSession() {
-    store.stopTimer();
-    updateTimerControls(false);
-    showToast('Session completed and saved.');
-}
-
-function handleFormatClick(index) {
-    // This function should handle formatting for the specific note
-    console.log(`Format options for session ${index}`);
-    showToast('Formatting options are under development.');
-    // In a full implementation, this would open a formatting menu or apply pre-defined formats
 }
 
 function applyFormat(command) {
@@ -698,15 +794,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('giveFeedback').addEventListener('click', () => openModal('feedbackModal'));
     document.getElementById('addPastSession').addEventListener('click', () => openModal('pastSessionModal'));
     document.getElementById('createMandal').addEventListener('click', handleCreateMandal);
-    document.getElementById('sortByDate').addEventListener('click', () => {
-        store.toggleSortOrder();
-        displaySessionHistory(store.state);
-    });
     document.getElementById('submitFeedback').addEventListener('click', handleSubmitFeedback);
     document.getElementById('pastSessionForm').addEventListener('submit', handleAddPastSession);
     document.getElementById('searchInput').addEventListener('input', handleSearch);
-    document.getElementById('startSession').addEventListener('click', handleStartSession);
-    document.getElementById('stopSession').addEventListener('click', handleStopSession);
     document.getElementById('embedMedia').addEventListener('click', handleEmbedMedia);
 
     const userNameElement = document.getElementById('userName');
@@ -726,6 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('activeMandalInfo').style.display = 'block';
         document.getElementById('sessionHistory').style.display = 'block';
         document.getElementById('mandalCreation').style.display = 'none';
+        store.initializeTimer();
     }
 
     updateDashboard(store.state);
@@ -770,8 +861,6 @@ store.addObserver({
     update: function(state) {
         updateDashboard(state);
         displaySessionHistory(state);
-        updateTimerControls(state.timerRunning);
-        updateTimerDisplay(state.timerSeconds);
     }
 });
 
@@ -793,7 +882,174 @@ window.addEventListener('beforeunload', () => {
     store.cleanup();
 });
 
-
+// Add CSS for the application
+const style = document.createElement('style');
+style.textContent = `
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .dark-mode {
+        background-color: #222;
+        color: #f4f4f4;
+    }
+    h1, h2, h3 {
+        color: #2c3e50;
+    }
+    .dark-mode h1, .dark-mode h2, .dark-mode h3 {
+        color: #ecf0f1;
+    }
+    button {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+    button:hover {
+        background-color: #2980b9;
+    }
+    .delete-btn {
+        background-color: #e74c3c;
+    }
+    .delete-btn:hover {
+        background-color: #c0392b;
+    }
+    .card {
+        background-color: #fff;
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .dark-mode .card {
+        background-color: #333;
+        box-shadow: 0 2px 5px rgba(255,255,255,0.1);
+    }
+    .timer-container {
+        position: relative;
+        width: 300px;
+        height: 300px;
+        margin: 20px auto;
+    }
+    .timer-display {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    #draggable-dot {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background-color: #f5a623;
+        border-radius: 50%;
+        cursor: pointer;
+        transform: translate(-50%, -50%);
+    }
+    .sticky-format-nav {
+        background-color: #f1f1f1;
+        padding: 10px;
+        z-index: 100;
+    }
+    .sticky-format-nav.sticky {
+        position: fixed;
+        top: 0;
+        width: 100%;
+    }
+    .session-entry {
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .dark-mode .session-entry {
+        background-color: #2c3e50;
+    }
+    .editable-notes {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin: 10px 0;
+        min-height: 100px;
+    }
+    .dark-mode .editable-notes {
+        background-color: #34495e;
+        border-color: #2c3e50;
+    }
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 5px;
+        display: none;
+    }
+    #backToTop {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 30px;
+        z-index: 99;
+        border: none;
+        outline: none;
+        background-color: #555;
+        color: white;
+        cursor: pointer;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 18px;
+    }
+    #backToTop:hover {
+        background-color: #333;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 500px;
+    }
+    .dark-mode .modal-content {
+        background-color: #2c3e50;
+        color: #ecf0f1;
+    }
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+    .close:hover,
+    .close:focus {
+        color: #000;
+        text-decoration: none;
+        cursor: pointer;
+    }
+`;
+document.head.appendChild(style);
 
 // This concludes the main JavaScript file for the Meditation Mandal Tracker application.
   </script>
